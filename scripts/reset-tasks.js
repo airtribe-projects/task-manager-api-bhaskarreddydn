@@ -1,5 +1,16 @@
-{
+const fs = require('fs');
+const path = require('path');
+
+const filePath = path.join(__dirname, '../task.json');
+
+const initialTasks = {
   "tasks": [
+    {
+      "id": 1,
+      "title": "Set up environment",
+      "description": "Install Node.js, npm, and git",
+      "completed": true
+    },
     {
       "id": 2,
       "title": "Create a new project",
@@ -83,24 +94,14 @@
       "title": "Install jsonwebtoken",
       "description": "Install jsonwebtoken",
       "completed": false
-    },
-    {
-      "id": 16,
-      "title": "New Task",
-      "description": "New Task Description",
-      "completed": false,
-      "priority": "medium",
-      "status": "pending",
-      "createdAt": "2026-08-05T09:57:01.874Z"
-    },
-    {
-      "id": 17,
-      "title": "Implement validation middleware",
-      "description": "Write request validation filters using built-in controllers",
-      "completed": false,
-      "priority": "high",
-      "status": "pending",
-      "createdAt": "2026-08-05T09:58:40.638Z"
     }
   ]
+};
+
+try {
+  fs.writeFileSync(filePath, JSON.stringify(initialTasks, null, 2), 'utf-8');
+  console.log('Successfully reset task.json database to seed state.');
+} catch (err) {
+  console.error('Failed to reset task.json:', err);
+  process.exit(1);
 }
