@@ -5,7 +5,7 @@ A production-grade, stateless Task Manager REST API built on Node.js and Express
 ---
 
 ## Project Overview
-The Task Manager REST API enables clients to create, read, update, partially update, and delete tasks. All tasks are maintained in-memory for fast access, and the project simulates enterprise-standard API patterns, request logging, and payload validation.
+The Task Manager REST API enables clients to create, read, update, partially update, and delete tasks. All tasks are persisted locally in a synchronous `task.json` file database to ensure data states remain intact between server executions, and the project demonstrates enterprise-standard API patterns, request logging, and payload validation.
 
 ---
 
@@ -41,41 +41,43 @@ The Task Manager REST API enables clients to create, read, update, partially upd
 ## Project Folder Structure
 ```
 task-manager-api/
+├── app.js                     # Configures Express, mounts middlewares & listens on PORT
+├── task.json                  # Synchronous file database (JSON storage)
+├── package.json               # Scripts, test configurations & dependencies
+├── .env                       # Environment configuration values
+├── .gitignore                 # Files ignored by git
+├── postman_collection.json    # Ready-to-import Postman test collection
+│
 ├── src/
-│   ├── app.js                 # Bootstraps Express configurations and mounts middlewares
-│   ├── server.js              # Server entry point to listen on PORT
-│   │
 │   ├── config/
 │   │      env.js              # Environment variable configurations
 │   │
 │   ├── routes/
-│   │      task.routes.js      # REST endpoint routes and inline docs
+│   │      task.routes.js      # REST routes with extensive inline comments
 │   │
 │   ├── controllers/
-│   │      task.controller.js  # Controller orchestration
+│   │      task.controller.js  # Request/Response controller orchestration
 │   │
 │   ├── services/
-│   │      task.service.js     # Pure business logic, sorting, and filtering
+│   │      task.service.js     # Business rules, sorting, searching, and filters
 │   │
 │   ├── models/
-│   │      task.model.js       # In-memory storage interactions
+│   │      task.model.js       # JSON file-based database model interface
 │   │
 │   ├── middlewares/
-│   │      logger.middleware.js       # Request logging
-│   │      validation.middleware.js   # Request payload validation
-│   │      error.middleware.js        # Global catch-all error handling
+│   │      logger.middleware.js       # Standard request logger
+│   │      validation.middleware.js   # Task schema payload validation
+│   │      error.middleware.js        # Global error catcher
 │   │
-│   ├── utils/
-│   │      response.util.js    # Standardised success/error JSON response envelopes
-│   │      constants.js        # State and validation rule values
-│   │
-│   └── data/
-│          tasks.js            # Initial seed tasks array
+│   └── utils/
+│          response.util.js    # Enveloped / raw response standardizers
+│          constants.js        # Allowed status and priority values
 │
-├── package.json               # Scripts and dependencies
-├── .env                       # Environment configuration values
-├── .gitignore                 # Files ignored by git
-└── postman_collection.json    # Ready-to-import Postman test collection
+├── test/
+│   └── server.test.js         # Tap integration test suite
+│
+└── scripts/
+    └── reset-tasks.js         # Database seeder utility run during pretest
 ```
 
 ---
@@ -138,12 +140,21 @@ The API is mounted on two prefixes to support both legacy tests and versioned st
 
 ## Validation Rules
 
-- **Title**: Required in `POST` and `PUT`, minimum 3 characters.
-- **Description**: Optional string.
-- **Priority**: Optional, but if provided must be one of: `low`, `medium`, `high`.
-- **Status**: Optional, but if provided must be one of: `pending`, `in-progress`, `completed`.
-- **Completed**: Optional boolean value.
-- **Invalid payloads** are rejected immediately with a `400 Bad Request` payload detailing the validation errors.
+### For Creation (POST) & Replacement (PUT)
+* **Title**: **Required** string, minimum 3 characters.
+* **Description**: **Required** string.
+* **Completed**: **Required** boolean value (`true` or `false`).
+* **Priority**: Optional string. If provided, must be one of: `low`, `medium`, `high` (defaults to `medium`).
+* **Status**: Optional string. If provided, must be one of: `pending`, `in-progress`, `completed` (defaults to `pending` or matches `completed` flag).
+
+### For Partial Updates (PATCH)
+* **Title**: Optional string, minimum 3 characters if provided.
+* **Description**: Optional string.
+* **Completed**: Optional boolean value.
+* **Priority**: Optional string. If provided, must be one of: `low`, `medium`, `high`.
+* **Status**: Optional string. If provided, must be one of: `pending`, `in-progress`, `completed`.
+
+* **Invalid payloads** are rejected immediately with a `400 Bad Request` status code containing a JSON payload detailing all validation failures.
 
 ---
 
@@ -156,6 +167,7 @@ The API is mounted on two prefixes to support both legacy tests and versioned st
 {
   "title": "Configure logger middleware",
   "description": "Establish standard logger format.",
+  "completed": false,
   "priority": "high",
   "status": "pending"
 }
@@ -169,6 +181,7 @@ The API is mounted on two prefixes to support both legacy tests and versioned st
     "id": 4,
     "title": "Configure logger middleware",
     "description": "Establish standard logger format.",
+    "completed": false,
     "priority": "high",
     "status": "pending",
     "createdAt": "2026-08-05T12:00:00.000Z"
